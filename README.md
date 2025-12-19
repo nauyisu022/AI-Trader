@@ -905,6 +905,16 @@ The materials provided by the AI-Trader project are for research purposes only a
 ---
 
 
+## 🌟Citation
+
+```python
+@article{fan2025ai,
+  title={AI-Trader: Benchmarking Autonomous Agents in Real-Time Financial Markets},
+  author={Fan, Tianyu and Yang, Yuhao and Jiang, Yangqin and Zhang, Yifei and Chen, Yuxuan and Huang, Chao},
+  journal={arXiv preprint arXiv:2512.10971},
+  year={2025}
+}
+```
 
 
 <p align="center">
