@@ -303,7 +303,16 @@ class BaseAgentAStock_Hour(BaseAgentAStock):
 
                 # Extract tool messages with None check (enhanced error handling)
                 tool_msgs = extract_tool_messages(response)
-                tool_response = "\n".join([msg.content for msg in tool_msgs if msg.content is not None])
+                tool_contents = []
+                for msg in tool_msgs:
+                    if msg.content is not None:
+                        # Handle both str and list content
+                        if isinstance(msg.content, str):
+                            tool_contents.append(msg.content)
+                        elif isinstance(msg.content, list):
+                            # If content is a list, join its string representations
+                            tool_contents.append(str(msg.content))
+                tool_response = "\n".join(tool_contents)
 
                 # Prepare new messages
                 new_messages = [

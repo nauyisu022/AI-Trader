@@ -23,78 +23,6 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, project_root)
 
 
-class DeepSeekChatOpenAI(ChatOpenAI):
-    """
-    Custom ChatOpenAI wrapper for DeepSeek API compatibility.
-    Handles the case where DeepSeek returns tool_calls.args as JSON strings instead of dicts.
-    """
-
-    def _create_message_dicts(self, messages: list, stop: Optional[list] = None) -> list:
-        """Override to handle request parsing - convert JSON string arguments to dicts"""
-        message_dicts = super()._create_message_dicts(messages, stop)
-
-        # Fix tool_calls format in the message dicts for requests
-        for message_dict in message_dicts:
-            if "tool_calls" in message_dict:
-                for tool_call in message_dict["tool_calls"]:
-                    if "function" in tool_call and "arguments" in tool_call["function"]:
-                        args = tool_call["function"]["arguments"]
-                        # If arguments is a string, parse it
-                        if isinstance(args, str):
-                            try:
-                                tool_call["function"]["arguments"] = json.loads(args)
-                            except json.JSONDecodeError:
-                                pass  # Keep as string if parsing fails
-
-        return message_dicts
-
-    def _generate(self, messages: list, stop: Optional[list] = None, **kwargs):
-        """Override generation to fix tool_calls format in responses"""
-        # Call parent's generate method
-        result = super()._generate(messages, stop, **kwargs)
-
-        # Fix tool_calls format in the generated messages
-        for generation in result.generations:
-            for gen in generation:
-                if hasattr(gen, "message") and hasattr(gen.message, "additional_kwargs"):
-                    tool_calls = gen.message.additional_kwargs.get("tool_calls")
-                    if tool_calls:
-                        for tool_call in tool_calls:
-                            if "function" in tool_call and "arguments" in tool_call["function"]:
-                                args = tool_call["function"]["arguments"]
-                                # If arguments is a string, parse it
-                                if isinstance(args, str):
-                                    try:
-                                        tool_call["function"]["arguments"] = json.loads(args)
-                                    except json.JSONDecodeError:
-                                        pass  # Keep as string if parsing fails
-
-        return result
-
-    async def _agenerate(self, messages: list, stop: Optional[list] = None, **kwargs):
-        """Override async generation to fix tool_calls format in responses"""
-        # Call parent's async generate method
-        result = await super()._agenerate(messages, stop, **kwargs)
-
-        # Fix tool_calls format in the generated messages
-        for generation in result.generations:
-            for gen in generation:
-                if hasattr(gen, "message") and hasattr(gen.message, "additional_kwargs"):
-                    tool_calls = gen.message.additional_kwargs.get("tool_calls")
-                    if tool_calls:
-                        for tool_call in tool_calls:
-                            if "function" in tool_call and "arguments" in tool_call["function"]:
-                                args = tool_call["function"]["arguments"]
-                                # If arguments is a string, parse it
-                                if isinstance(args, str):
-                                    try:
-                                        tool_call["function"]["arguments"] = json.loads(args)
-                                    except json.JSONDecodeError:
-                                        pass  # Keep as string if parsing fails
-
-        return result
-
-
 from prompts.agent_prompt_crypto import STOP_SIGNAL, get_agent_system_prompt_crypto
 from tools.general_tools import (extract_conversation, extract_tool_messages,
                                  get_config_value, write_config_value)
@@ -146,6 +74,7 @@ class BaseAgentCrypto:
         max_steps: int = 10,
         max_retries: int = 3,
         base_delay: float = 0.5,
+        recursion_limit: int = 250,
         openai_base_url: Optional[str] = None,
         openai_api_key: Optional[str] = None,
         initial_cash: float = 10000.0,
@@ -183,6 +112,7 @@ class BaseAgentCrypto:
         self.max_steps = max_steps
         self.max_retries = max_retries
         self.base_delay = base_delay
+        self.recursion_limit = recursion_limit
         self.initial_cash = initial_cash
         self.init_date = init_date
 
@@ -265,23 +195,13 @@ class BaseAgentCrypto:
             )
 
         try:
-            # Create AI model - use custom DeepSeekChatOpenAI for DeepSeek models
-            # to handle tool_calls.args format differences (JSON string vs dict)
-            if "deepseek" in self.basemodel.lower():
-                self.model = DeepSeekChatOpenAI(
-                    model=self.basemodel,
-                    base_url=self.openai_base_url,
-                    api_key=self.openai_api_key,
-                    max_retries=3,
-                    timeout=30,
-                )
-            else:
-                self.model = ChatOpenAI(
-                    model=self.basemodel,
-                    base_url=self.openai_base_url,
-                    api_key=self.openai_api_key,
-                    max_retries=3,
-                    timeout=30,
+            # Create AI model
+            self.model = ChatOpenAI(
+                model=self.basemodel,
+                base_url=self.openai_base_url,
+                api_key=self.openai_api_key,
+                max_retries=3,
+                timeout=30,
                 )
         except Exception as e:
             raise RuntimeError(f"❌ Failed to initialize AI model: {e}")
@@ -312,7 +232,7 @@ class BaseAgentCrypto:
         """Agent invocation with retry"""
         for attempt in range(1, self.max_retries + 1):
             try:
-                return await self.agent.ainvoke({"messages": message}, {"recursion_limit": 100})
+                return await self.agent.ainvoke({"messages": message}, {"recursion_limit": self.recursion_limit})
             except Exception as e:
                 if attempt == self.max_retries:
                     raise e
@@ -368,7 +288,16 @@ class BaseAgentCrypto:
 
                 # Extract tool messages
                 tool_msgs = extract_tool_messages(response)
-                tool_response = "\n".join([msg.content for msg in tool_msgs])
+                tool_contents = []
+                for msg in tool_msgs:
+                    if msg.content is not None:
+                        # Handle both str and list content
+                        if isinstance(msg.content, str):
+                            tool_contents.append(msg.content)
+                        elif isinstance(msg.content, list):
+                            # If content is a list, join its string representations
+                            tool_contents.append(str(msg.content))
+                tool_response = "\n".join(tool_contents)
 
                 # Prepare new messages
                 new_messages = [

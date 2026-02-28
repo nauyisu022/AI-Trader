@@ -40,6 +40,10 @@ markets:
         display_name: "MiniMax M2"
         icon: "./figs/minimax.svg"
         color: "#3a86ff"
+      - folder: "minimax-m2.5"
+        display_name: "MiniMax M2.5"
+        icon: "./figs/minimax.svg"
+        color: "#ff6b6b"
 
   cn:
     name: "A-Shares (SSE 50)"
