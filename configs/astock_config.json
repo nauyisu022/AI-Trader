@@ -47,6 +47,12 @@
       "basemodel": "minimax/minimax-m2",
       "signature": "MiniMax-M2",
       "enabled": false
+    },
+    {
+      "name": "minimax-m2.5",
+      "basemodel": "minimax/minimax-m2.5",
+      "signature": "minimax-m2.5",
+      "enabled": false
     }
   ],
   "agent_config": {

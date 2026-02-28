@@ -1,9 +1,9 @@
 {
-  "agent_type": "BaseAgent",
+  "agent_type": "BaseAgent_Hour",
   "market": "us",
   "date_range": {
-    "init_date": "2025-10-01",
-    "end_date": "2025-10-21"
+    "init_date": "2025-10-30 10:00:00",
+    "end_date": "2025-11-05 15:00:00"
   },
   "models": [
     {
@@ -16,9 +16,9 @@
     },
     {
       "name": "deepseek-chat-v3.1",
-      "basemodel": "deepseek/deepseek-chat-v3.1",
+      "basemodel": "deepseek-chat",
       "signature": "deepseek-chat-v3.1",
-      "enabled": false
+      "enabled": true
     },
     {
       "name": "qwen3-max",
@@ -36,7 +36,13 @@
       "name": "gpt-5",
       "basemodel": "openai/gpt-5",
       "signature": "gpt-5",
-      "enabled": true
+      "enabled": false
+    },
+    {
+      "name": "minimax-m2.5",
+      "basemodel": "minimax/minimax-m2.5",
+      "signature": "minimax-m2.5",
+      "enabled": false
     }
   ],
   "agent_config": {

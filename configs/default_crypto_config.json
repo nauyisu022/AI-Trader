@@ -35,6 +35,12 @@
       "basemodel": "openai/gpt-5",
       "signature": "gpt-5",
       "enabled": true
+    },
+    {
+      "name": "minimax-m2.5",
+      "basemodel": "minimax/minimax-m2.5",
+      "signature": "minimax-m2.5",
+      "enabled": false
     }
   ],
   "agent_config": {
