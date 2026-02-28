@@ -22,8 +22,8 @@ from langchain_openai import ChatOpenAI
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-
 from prompts.agent_prompt_crypto import STOP_SIGNAL, get_agent_system_prompt_crypto
+from tools.model_factory import create_chat_model
 from tools.general_tools import (extract_conversation, extract_tool_messages,
                                  get_config_value, write_config_value)
 from tools.price_tools import add_no_trade_record
@@ -195,14 +195,15 @@ class BaseAgentCrypto:
             )
 
         try:
-            # Create AI model
-            self.model = ChatOpenAI(
+            # Create AI model using factory function
+            self.model = create_chat_model(
                 model=self.basemodel,
                 base_url=self.openai_base_url,
                 api_key=self.openai_api_key,
                 max_retries=3,
                 timeout=30,
-                )
+                verbose=False,  # Crypto agent doesn't have verbose attribute
+            )
         except Exception as e:
             raise RuntimeError(f"❌ Failed to initialize AI model: {e}")
 
