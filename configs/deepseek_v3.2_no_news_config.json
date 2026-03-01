@@ -1,0 +1,28 @@
+{
+  "agent_type": "BaseAgent_Hour",
+  "market": "us",
+  "date_range": {
+    "init_date": "2025-10-24 10:00:00",
+    "end_date": "2025-10-28 16:00:00"
+  },
+  "models": [
+    {
+      "name": "deepseek-chat",
+      "basemodel": "deepseek-chat",
+      "signature": "deepseek-chat-v3.2-no-news",
+      "enabled": true
+    }
+  ],
+  "agent_config": {
+    "max_steps": 30,
+    "max_retries": 3,
+    "base_delay": 1.0,
+    "recursion_limit": 250,
+    "initial_cash": 10000.0,
+    "verbose": true,
+    "disabled_tools": ["search"]
+  },
+  "log_config": {
+    "log_path": "./data/agent_data"
+  }
+}
