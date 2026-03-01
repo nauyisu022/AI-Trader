@@ -178,6 +178,7 @@ async def main(config_path=None):
     initial_cash = agent_config.get("initial_cash", 10000.0)
     verbose = agent_config.get("verbose", False)
     recursion_limit = agent_config.get("recursion_limit", 250)
+    disabled_tools = agent_config.get("disabled_tools", [])
 
     # Display enabled model information
     model_names = [m.get("name", m.get("signature")) for m in enabled_models]
@@ -267,7 +268,8 @@ async def main(config_path=None):
                     initial_cash=initial_cash,
                     init_date=INIT_DATE,
                     openai_base_url=openai_base_url,
-                    openai_api_key=openai_api_key
+                    openai_api_key=openai_api_key,
+                    disabled_tools=disabled_tools
                 )
             else:
                 agent = AgentClass(
@@ -282,7 +284,8 @@ async def main(config_path=None):
                     initial_cash=initial_cash,
                     init_date=INIT_DATE,
                     openai_base_url=openai_base_url,
-                    openai_api_key=openai_api_key
+                    openai_api_key=openai_api_key,
+                    disabled_tools=disabled_tools
                 )
 
             print(f"✅ {agent_type} instance created successfully: {agent}")

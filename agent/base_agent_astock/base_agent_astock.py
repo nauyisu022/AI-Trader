@@ -117,6 +117,7 @@ class BaseAgentAStock:
         initial_cash: float = 100000.0,  # 默认10万人民币
         init_date: str = "2025-10-09",
         market: str = "cn",  # 接受但忽略此参数，始终使用"cn"
+        disabled_tools: Optional[List[str]] = None
     ):
         """
         Initialize BaseAgentAStock
@@ -135,6 +136,7 @@ class BaseAgentAStock:
             initial_cash: Initial cash amount (default: 100000.0 RMB)
             init_date: Initialization date
             market: Market type (accepted for compatibility, but always uses "cn")
+            disabled_tools: List of MCP server keys to disable (e.g. ["search"] to run without news)
         """
         self.signature = signature
         self.basemodel = basemodel
@@ -155,6 +157,10 @@ class BaseAgentAStock:
 
         # Set MCP configuration
         self.mcp_config = mcp_config or self._get_default_mcp_config()
+        if disabled_tools:
+            for key in disabled_tools:
+                self.mcp_config.pop(key, None)
+            print(f"🚫 Disabled MCP tools: {disabled_tools}")
 
         # Set log path - A股专用路径
         self.base_log_path = log_path or "./data/agent_data_astock"

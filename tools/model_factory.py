@@ -12,17 +12,88 @@ class DeepSeekChatOpenAI(ChatOpenAI):
     """
     Custom ChatOpenAI wrapper for DeepSeek official API compatibility.
     Handles the case where DeepSeek returns tool_calls.args as JSON strings instead of dicts.
+    Also ensures message content is always a string, not a list.
     
     Only use this wrapper when connecting to official DeepSeek API endpoints.
     """
+    
+    def _convert_message_to_dict(self, message):
+        """Convert a message to dict format, ensuring content is string"""
+        from langchain_core.messages import BaseMessage
+        
+        if isinstance(message, BaseMessage):
+            msg_dict = message.dict()
+        elif isinstance(message, dict):
+            msg_dict = message.copy()
+        else:
+            return message
+            
+        # DeepSeek API requires content to be string, not list
+        if "content" in msg_dict and isinstance(msg_dict["content"], list):
+            content_parts = []
+            for part in msg_dict["content"]:
+                if isinstance(part, dict):
+                    if "text" in part:
+                        content_parts.append(part["text"])
+                    elif "type" in part and part["type"] == "text":
+                        content_parts.append(part.get("text", ""))
+                    else:
+                        content_parts.append(str(part))
+                else:
+                    content_parts.append(str(part))
+            msg_dict["content"] = "\n".join(content_parts) if content_parts else ""
+            
+        return msg_dict
 
     def _create_message_dicts(self, messages: list, stop: Optional[list] = None) -> list:
-        """Override to handle response parsing"""
+        """Override to handle request formatting - ensure content is always string"""
         message_dicts = super()._create_message_dicts(messages, stop)
-        return message_dicts
+        
+        # Convert all message contents from list to string if needed
+        converted_dicts = []
+        for msg in message_dicts:
+            converted_msg = self._convert_message_to_dict(msg)
+            converted_dicts.append(converted_msg)
+        
+        return converted_dicts
 
+    def _convert_messages_for_api(self, messages: list) -> list:
+        """Convert messages to ensure content is always string for DeepSeek API"""
+        from langchain_core.messages import BaseMessage
+        
+        converted = []
+        for msg in messages:
+            if isinstance(msg, BaseMessage):
+                # Convert BaseMessage to dict
+                msg_dict = msg.dict() if hasattr(msg, 'dict') else msg.model_dump()
+                
+                # Fix content if it's a list
+                if "content" in msg_dict and isinstance(msg_dict["content"], list):
+                    content_parts = []
+                    for part in msg_dict["content"]:
+                        if isinstance(part, dict):
+                            if "text" in part:
+                                content_parts.append(part["text"])
+                            elif "type" in part and part["type"] == "text":
+                                content_parts.append(part.get("text", ""))
+                            else:
+                                content_parts.append(str(part))
+                        else:
+                            content_parts.append(str(part))
+                    msg_dict["content"] = "\n".join(content_parts) if content_parts else ""
+                
+                # Reconstruct message
+                converted.append(type(msg)(**msg_dict))
+            else:
+                converted.append(msg)
+        
+        return converted
+    
     def _generate(self, messages: list, stop: Optional[list] = None, **kwargs):
-        """Override generation to fix tool_calls format in responses"""
+        """Override generation to fix message format and tool_calls in responses"""
+        # Convert messages to ensure content is string
+        messages = self._convert_messages_for_api(messages)
+        
         result = super()._generate(messages, stop, **kwargs)
 
         for generation in result.generations:
@@ -42,7 +113,10 @@ class DeepSeekChatOpenAI(ChatOpenAI):
         return result
 
     async def _agenerate(self, messages: list, stop: Optional[list] = None, **kwargs):
-        """Override async generation to fix tool_calls format in responses"""
+        """Override async generation to fix message format and tool_calls in responses"""
+        # Convert messages to ensure content is string
+        messages = self._convert_messages_for_api(messages)
+        
         result = await super()._agenerate(messages, stop, **kwargs)
 
         for generation in result.generations:

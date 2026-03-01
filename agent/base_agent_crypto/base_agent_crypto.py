@@ -80,6 +80,7 @@ class BaseAgentCrypto:
         initial_cash: float = 10000.0,
         init_date: str = "2025-10-13",
         market: str = "crypto",
+        disabled_tools: Optional[List[str]] = None
     ):
         """
         Initialize BaseAgentCrypto
@@ -98,6 +99,7 @@ class BaseAgentCrypto:
             initial_cash: Initial cash amount in USDT
             init_date: Initialization date
             market: Market type, hardcoded to "crypto"
+            disabled_tools: List of MCP server keys to disable (e.g. ["search"] to run without news)
         """
         self.signature = signature
         self.basemodel = basemodel
@@ -118,6 +120,10 @@ class BaseAgentCrypto:
 
         # Set MCP configuration
         self.mcp_config = mcp_config or self._get_default_mcp_config()
+        if disabled_tools:
+            for key in disabled_tools:
+                self.mcp_config.pop(key, None)
+            print(f"🚫 Disabled MCP tools: {disabled_tools}")
 
         # Set log path
         self.base_log_path = log_path or "./data/agent_data_crypto"

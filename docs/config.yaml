@@ -177,6 +177,7 @@ chart:
 ui:
   initial_value: 10000  # Starting cash for all agents
   max_recent_trades: 20  # Number of trades to show in portfolio view
+  end_date: "2025-10-31 14:00:00"  # Clip all chart data to this timestamp (inclusive). Remove to show full range.
   date_formats:
     hourly: "MM/DD HH:mm"
     daily: "YYYY-MM-DD"

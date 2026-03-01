@@ -150,6 +150,14 @@ class ConfigLoader {
         return this.config.ui;
     }
 
+    // Get global end date cutoff (optional, clips all chart data)
+    getEndDate() {
+        if (!this.config || !this.config.ui || !this.config.ui.end_date) {
+            return null;
+        }
+        return this.config.ui.end_date; // e.g. "2025-10-31"
+    }
+
     // Get cache configuration
     getCacheConfig() {
         if (!this.config || !this.config.cache) {

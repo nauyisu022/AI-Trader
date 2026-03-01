@@ -407,6 +407,17 @@ class DataLoader {
             return null;
         }
 
+        // Apply global end_date cutoff from config (if set)
+        const _globalEndDate = window.configLoader.getEndDate();
+        if (_globalEndDate) {
+            const cutoff = _globalEndDate;
+            const before = assetHistory.length;
+            assetHistory = assetHistory.filter(h => h.date <= cutoff);
+            if (assetHistory.length < before) {
+                console.log(`✂️ ${agentName}: clipped ${before - assetHistory.length} entries after ${_globalEndDate}`);
+            }
+        }
+
         const result = {
             name: agentName,
             positions: positions,
@@ -597,6 +608,12 @@ class DataLoader {
                 });
             }
 
+            // Apply global end_date cutoff from config (if set)
+            const globalEndDate = window.configLoader.getEndDate();
+            if (globalEndDate && (!endDate || globalEndDate < endDate)) {
+                endDate = globalEndDate;
+            }
+
             let benchmarkStartPrice = null;
             let currentValue = initialValue;
             
@@ -697,6 +714,27 @@ class DataLoader {
 
             if (this.cacheManager.shouldShowPerformanceMetrics()) {
                 console.log(`%c⚡ Total data load time: ${loadTime.toFixed(2)}ms (cached)`, 'color: #00ff00; font-weight: bold');
+            }
+
+            // Apply end_date cutoff even on cached data
+            const _cutoffDate = window.configLoader.getEndDate();
+            if (_cutoffDate) {
+                const cutoff = _cutoffDate;
+                for (const agentName of Object.keys(cachedData)) {
+                    const agent = cachedData[agentName];
+                    if (agent && agent.assetHistory) {
+                        const before = agent.assetHistory.length;
+                        agent.assetHistory = agent.assetHistory.filter(h => h.date <= cutoff);
+                        if (agent.assetHistory.length < before) {
+                            console.log(`✂️ [cache] ${agentName}: clipped ${before - agent.assetHistory.length} entries after ${_cutoffDate}`);
+                            // Recalculate return based on clipped history
+                            if (agent.assetHistory.length > 0) {
+                                agent.currentValue = agent.assetHistory[agent.assetHistory.length - 1].value;
+                                agent.return = ((agent.currentValue - agent.initialValue) / agent.initialValue) * 100;
+                            }
+                        }
+                    }
+                }
             }
 
             this.agentData = cachedData;

@@ -139,11 +139,18 @@ function updateStats() {
     let minDate = null;
     let maxDate = null;
 
+    const _endDateCutoff = window.configLoader.getEndDate(); // e.g. "2025-10-31"
+
     agentNames.forEach(name => {
         const history = allAgentsData[name].assetHistory;
         if (history.length > 0) {
             const firstDate = history[0].date;
-            const lastDate = history[history.length - 1].date;
+            let lastDate = history[history.length - 1].date;
+
+            // Clip to global end_date if configured (supports both date and datetime strings)
+            if (_endDateCutoff && lastDate > _endDateCutoff) {
+                lastDate = _endDateCutoff;
+            }
 
             if (!minDate || firstDate < minDate) minDate = firstDate;
             if (!maxDate || lastDate > maxDate) maxDate = lastDate;
